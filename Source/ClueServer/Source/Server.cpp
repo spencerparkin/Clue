@@ -4,7 +4,7 @@
 
 using namespace Clue;
 
-Server::Server(int numPlayers, int port /*= 8080*/)
+Server::Server(int numPlayers, int port)
 {
 	this->numPlayers = numPlayers;
 	this->port = port;
@@ -35,7 +35,7 @@ Server::Server(int numPlayers, int port /*= 8080*/)
 
 	WORD version = MAKEWORD(2, 2);
 	WSADATA startupData;
-	if (WSAStartup(version, &startupData) != 0)
+	if (::WSAStartup(version, &startupData) != 0)
 		return;
 
 	addrinfo hints;
@@ -70,7 +70,7 @@ Server::Server(int numPlayers, int port /*= 8080*/)
 
 	while (this->playerArray.size() < this->numPlayers)
 	{
-		printf("Waiting for player %d to connect...", int(this->playerArray.size()) + 1);
+		printf("Waiting for player %d of %d to connect...\n", int(this->playerArray.size()) + 1, this->numPlayers);
 
 		SOCKET connectedSocket = ::accept(this->socket, nullptr, nullptr);
 		if (connectedSocket == INVALID_SOCKET)
@@ -81,7 +81,7 @@ Server::Server(int numPlayers, int port /*= 8080*/)
 	}
 
 	for (std::shared_ptr<Player>& player : this->playerArray)
-		player->Initialize();
+		player->Setup();
 
 	while (!this->shutdownSignaled)
 	{
@@ -92,4 +92,6 @@ Server::Server(int numPlayers, int port /*= 8080*/)
 
 	for (std::shared_ptr<Player>& player : this->playerArray)
 		player->Shutdown();
+
+	::WSACleanup();
 }

@@ -8,7 +8,7 @@ Player::Player(SOCKET connectedSocket) : packetThread(connectedSocket)
 {
 }
 
-bool Player::Initialize()
+bool Player::Setup()
 {
 	if (!this->packetThread.Split())
 		return false;

@@ -35,3 +35,7 @@ target_compile_definitions(ClueLibrary PRIVATE
 target_include_directories(ClueLibrary PUBLIC
 	"Source"
 )
+
+target_link_libraries(ClueLibrary PUBLIC
+	Ws2_32.lib
+)

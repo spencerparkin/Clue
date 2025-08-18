@@ -11,7 +11,7 @@ public:
 	Player(SOCKET connectedSocket);
 	virtual ~Player();
 
-	bool Initialize();
+	bool Setup();
 	bool Shutdown();
 
 	Clue::PacketThread packetThread;

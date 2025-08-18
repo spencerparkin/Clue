@@ -17,5 +17,4 @@ add_executable(ClueServer
 
 target_link_libraries(ClueServer PRIVATE
 	ClueLibrary
-	Ws2_32.lib
 )

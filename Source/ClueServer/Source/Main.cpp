@@ -6,9 +6,9 @@
 
 int main(int argc, char** argv)
 {
-	if (argc < 2)
+	if (argc < 3)
 	{
-		fprintf(stderr, "Please pass in the number of players.");
+		fprintf(stderr, "Please pass in the number of players and the port.");
 		return -1;
 	}
 
@@ -19,10 +19,14 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	std::shared_ptr<Server> server = std::make_shared<Server>(numPlayers);
+	int port = ::atoi(argv[2]);
+
+	std::shared_ptr<Server> server = std::make_shared<Server>(numPlayers, port);
 	if (!server->Split())
 		return -1;
 
+	printf("Clue server running on port %d.\n", port);
+	printf("Press 'x' to exit.\n");
 	while (server->IsRunning())
 	{
 		int key = ::_getch();
@@ -31,6 +35,5 @@ int main(int argc, char** argv)
 	}
 
 	server->Join();
-
 	return 0;
 }

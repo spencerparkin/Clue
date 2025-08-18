@@ -12,7 +12,7 @@
 class Server : public Clue::Thread
 {
 public:
-	Server(int numPlayers, int port = 8080);
+	Server(int numPlayers, int port);
 	virtual ~Server();
 
 	virtual bool Join() override;
