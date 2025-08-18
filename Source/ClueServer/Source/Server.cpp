@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "GameStates.h"
 #include <stdio.h>
 #include <format>
 
@@ -31,8 +32,6 @@ Server::Server(int numPlayers, int port)
 
 /*virtual*/ void Server::Run()
 {
-	this->boardGraph.Regenerate();
-
 	WORD version = MAKEWORD(2, 2);
 	WSADATA startupData;
 	if (::WSAStartup(version, &startupData) != 0)
@@ -68,30 +67,48 @@ Server::Server(int numPlayers, int port)
 	if (result == SOCKET_ERROR)
 		return;
 
-	while (this->playerArray.size() < this->numPlayers)
+	while (this->gameData.playerArray.size() < this->numPlayers)
 	{
-		printf("Waiting for player %d of %d to connect...\n", int(this->playerArray.size()) + 1, this->numPlayers);
+		printf("Waiting for player %d of %d to connect...\n", int(this->gameData.playerArray.size()) + 1, this->numPlayers);
 
 		SOCKET connectedSocket = ::accept(this->socket, nullptr, nullptr);
 		if (connectedSocket == INVALID_SOCKET)
 			return;
 
 		std::shared_ptr<Player> player = std::make_shared<Player>(connectedSocket);
-		this->playerArray.push_back(player);
+		this->gameData.playerArray.push_back(player);
 	}
 
-	for (std::shared_ptr<Player>& player : this->playerArray)
+	for (std::shared_ptr<Player>& player : this->gameData.playerArray)
 		player->Setup();
 
+	// The server runs as a simple state machine.
+	this->currentState = std::make_shared<SetupGameState>();
 	while (!this->shutdownSignaled)
 	{
-		// TODO: The state-machine pattern is probably best here so that we can exit at any time.
-		printf("Running...");
-		::Sleep(1000);
+		if (!this->currentState.get())
+			break;
+
+		std::shared_ptr<GameState> nextState;
+		if (this->currentState->Run(&this->gameData, nextState))
+			this->currentState = nextState;
 	}
 
-	for (std::shared_ptr<Player>& player : this->playerArray)
+	for (std::shared_ptr<Player>& player : this->gameData.playerArray)
 		player->Shutdown();
 
 	::WSACleanup();
+}
+
+Server::GameData* Server::GetGameData()
+{
+	return &this->gameData;
+}
+
+GameState::GameState()
+{
+}
+
+/*virtual*/ GameState::~GameState()
+{
 }

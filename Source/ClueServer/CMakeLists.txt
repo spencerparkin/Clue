@@ -7,6 +7,8 @@ set(CLUE_SERVER_SOURCE
 	Source/Server.h
 	Source/Player.cpp
 	Source/Player.h
+	Source/GameStates.cpp
+	Source/GameStates.h
 )
 
 source_group("Source" TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${CLUE_SERVER_SOURCE})

@@ -9,6 +9,11 @@
 #include <vector>
 #include <memory>
 
+class GameState;
+
+/**
+ * 
+ */
 class Server : public Clue::Thread
 {
 public:
@@ -18,12 +23,32 @@ public:
 	virtual bool Join() override;
 	virtual void Run() override;
 
+	struct GameData
+	{
+		Clue::BoardGraph boardGraph;
+		std::vector<std::shared_ptr<Player>> playerArray;
+	};
+
+	GameData* GetGameData();
+
 private:
 
+	std::shared_ptr<GameState> currentState;
+	GameData gameData;
 	int numPlayers;
 	int port;
 	SOCKET socket;
-	Clue::BoardGraph boardGraph;
-	std::vector<std::shared_ptr<Player>> playerArray;
 	volatile bool shutdownSignaled;
+};
+
+/**
+ * 
+ */
+class GameState
+{
+public:
+	GameState();
+	virtual ~GameState();
+
+	virtual bool Run(Server::GameData* gameData, std::shared_ptr<GameState>& nextState) = 0;
 };
