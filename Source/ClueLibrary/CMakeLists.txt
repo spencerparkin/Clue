@@ -6,6 +6,14 @@ set(CLUE_LIBRARY_SOURCES
 	Source/Card.cpp
 	Source/Card.h
 	Source/Defines.h
+	Source/Thread.cpp
+	Source/Thread.h
+	Source/Packet.cpp
+	Source/Packet.h
+	Source/RingBuffer.cpp
+	Source/RingBuffer.h
+	Source/PacketThread.cpp
+	Source/PacketThread.h
 	Source/Math/Vector2D.cpp
 	Source/Math/Vector2D.h
 	Source/Math/Box2D.cpp

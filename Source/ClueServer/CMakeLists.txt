@@ -3,6 +3,10 @@
 set(CLUE_SERVER_SOURCE
 	Source/Main.cpp
 	Source/Main.h
+	Source/Server.cpp
+	Source/Server.h
+	Source/Player.cpp
+	Source/Player.h
 )
 
 source_group("Source" TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${CLUE_SERVER_SOURCE})
@@ -13,4 +17,5 @@ add_executable(ClueServer
 
 target_link_libraries(ClueServer PRIVATE
 	ClueLibrary
+	Ws2_32.lib
 )
