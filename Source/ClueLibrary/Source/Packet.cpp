@@ -4,62 +4,18 @@ using namespace Clue;
 
 //------------------------------------- Packet -------------------------------------
 
-Packet::Packet()
+Packet::Packet(uint32_t packetType)
 {
+	this->packetType = packetType;
 }
 
 /*virtual*/ Packet::~Packet()
 {
 }
 
-/*static*/ std::shared_ptr<Packet> Packet::Read(const uint8_t* buffer, uint32_t bufferSize, uint32_t& numBytesRead)
-{
-	if(bufferSize < sizeof(Header))
-		return std::shared_ptr<Packet>();
-
-	Header header;
-	::memcpy(&header, buffer, sizeof(Header));
-
-	if (header.magic != CLUE_PACKET_MAGIC)
-	{
-		// TODO: Byte-swap.  Fail for now.
-		return std::shared_ptr<Packet>();
-	}
-
-	if (header.version != CLUE_PACKET_VERSION)
-		return std::shared_ptr<Packet>();
-
-	std::shared_ptr<Packet> packet;
-
-	switch (header.payloadType)
-	{
-	case CLUE_PACKET_TYPE_STRING_PACKET:
-		packet = std::make_shared<StringPacket>();
-		break;
-	}
-
-	if (packet.get())
-	{
-		const uint8_t* payloadBuffer = &buffer[sizeof(Header)];
-		uint32_t payloadBufferSize = bufferSize - sizeof(Header);
-		uint32_t numPayloadBytesRead = 0;
-		if (!packet->ReadFromBuffer(payloadBuffer, payloadBufferSize, numPayloadBytesRead))
-			packet.reset();
-
-		numBytesRead = sizeof(Header) + numPayloadBytesRead;
-	}
-
-	return packet;
-}
-
-/*static*/ bool Packet::Write(uint8_t* buffer, uint32_t bufferSize, uint32_t& numBytesWritten)
-{
-	return false;
-}
-
 //------------------------------------- StringPacket -------------------------------------
 
-StringPacket::StringPacket()
+StringPacket::StringPacket(uint32_t packetType /*= CLUE_PACKET_TYPE_STRING_PACKET*/) : Packet(packetType)
 {
 }
 
