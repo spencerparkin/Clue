@@ -25,6 +25,9 @@ public:
 
 	struct GameData
 	{
+		int whoseTurn;
+		int presentDiceRoll;
+		Clue::Accusation correctAccusation;
 		Clue::BoardGraph boardGraph;
 		std::vector<std::shared_ptr<Player>> playerArray;
 	};
@@ -50,5 +53,12 @@ public:
 	GameState();
 	virtual ~GameState();
 
-	virtual bool Run(Server::GameData* gameData, std::shared_ptr<GameState>& nextState) = 0;
+	enum Result
+	{
+		ContinueState,
+		LeaveState,
+		HaltMachine
+	};
+
+	virtual Result Run(Server::GameData* gameData, std::shared_ptr<GameState>& nextState) = 0;
 };

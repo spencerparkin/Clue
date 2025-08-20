@@ -30,15 +30,17 @@ namespace Clue
 		std::shared_ptr<Node> GetNodeContainingLocation(const Vector2D& location);
 		bool FindShortestPathBetweenNodes(Node* nodeA, Node* nodeB, std::vector<Node*>& nodeArray);
 		static int CalculatePathCost(const std::vector<Node*>& nodeArray);
+		std::shared_ptr<Node> FindNodeWithID(int id);
 
 		class Node
 		{
 			friend class BoardGraph;
 
 		public:
-			Node(std::optional<Room> room);
+			Node(int id, std::optional<Room> room);
 			virtual ~Node();
 
+			uint32_t GetId() const;
 			bool IsRoom() const;
 			const Vector2D& GetLocation() const;
 			const Box2D& GetBox() const;
@@ -56,6 +58,7 @@ namespace Clue
 			std::unordered_set<Node*> pathwayNodeSet;
 			std::optional<Room> room;
 
+			uint32_t id;
 			Vector2D location;
 			Box2D box;
 			mutable Node* parentNode;

@@ -1,13 +1,14 @@
 #pragma once
 
 #include "Defines.h"
+#include <stdint.h>
 #include <vector>
 #include <map>
 #include <string>
 
 namespace Clue
 {
-	enum Room : int
+	enum Room : uint32_t
 	{
 		Kitchen,
 		DiningRoom,
@@ -20,7 +21,7 @@ namespace Clue
 		Study
 	};
 
-	enum Weapon : int
+	enum Weapon : uint32_t
 	{
 		Candelstick,
 		Dagger,
@@ -30,7 +31,7 @@ namespace Clue
 		Wrench
 	};
 
-	enum Character : int
+	enum Character : uint32_t
 	{
 		MissScarlett,
 		ColonelMustard,

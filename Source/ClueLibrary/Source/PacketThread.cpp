@@ -1,14 +1,21 @@
 #include "PacketThread.h"
 #include "RingBuffer.h"
 #include <vector>
+#include <assert.h>
 
 using namespace Clue;
 
-PacketThread::PacketThread(SOCKET connectedSocket)
+PacketThread::PacketThread(SOCKET connectedSocket) : outgoingPacketBuffer(4 * 1024)
 {
 	this->connectedSocket = connectedSocket;
 
-	this->packetClassMap.insert(std::pair<uint32_t, std::shared_ptr<PacketClassBase>>(uint32_t(CLUE_PACKET_TYPE_STRING_PACKET), std::make_shared<PacketClass<StringPacket>>()));
+	this->packetClassMap.insert(std::pair<uint32_t, std::shared_ptr<PacketClassBase>>(uint32_t(CLUE_PACKET_TYPE_STRING), std::make_shared<PacketClass<StringPacket>>()));
+	this->packetClassMap.insert(std::pair<uint32_t, std::shared_ptr<PacketClassBase>>(uint32_t(CLUE_PACKET_TYPE_CHAR_AND_CARDS), std::make_shared<PacketClass<StructurePacket<CharacterAndCards>>>()));
+	this->packetClassMap.insert(std::pair<uint32_t, std::shared_ptr<PacketClassBase>>(uint32_t(CLUE_PACKET_TYPE_PLAYER_INTRO), std::make_shared<PacketClass<StructurePacket<PlayerIntroduction>>>()));
+	this->packetClassMap.insert(std::pair<uint32_t, std::shared_ptr<PacketClassBase>>(uint32_t(CLUE_PACKET_TYPE_DICE_ROLL), std::make_shared<PacketClass<StructurePacket<DiceRoll>>>()));
+	this->packetClassMap.insert(std::pair<uint32_t, std::shared_ptr<PacketClassBase>>(uint32_t(CLUE_PACKET_TYPE_PLAYER_TRAVEL_REQUESTED), std::make_shared<PacketClass<StructurePacket<PlayerTravelRequested>>>()));
+	this->packetClassMap.insert(std::pair<uint32_t, std::shared_ptr<PacketClassBase>>(uint32_t(CLUE_PACKET_TYPE_PLAYER_TRAVEL_REJECTED), std::make_shared<PacketClass<StructurePacket<PlayerTravelRejected>>>()));
+	this->packetClassMap.insert(std::pair<uint32_t, std::shared_ptr<PacketClassBase>>(uint32_t(CLUE_PACKET_TYPE_PLAYER_TRAVEL_ACCEPTED), std::make_shared<PacketClass<StructurePacket<PlayerTravelAccepted>>>()));
 }
 
 /*virtual*/ PacketThread::~PacketThread()
@@ -26,9 +33,9 @@ bool PacketThread::SendPacket(const std::shared_ptr<Packet> packet)
 	if (!this->WritePacket((uint8_t*)sendBuffer.data(), sendBuffer.size(), numBytesWritten, packet))
 		return false;
 
-	// TODO: Loop here until all bytes sent or is that bad?
-	int numBytesSent = ::send(this->connectedSocket, sendBuffer.data(), numBytesWritten, 0);
-	return numBytesSent == numBytesWritten;
+	bool dataWritten = this->outgoingPacketBuffer.WriteBytes((const uint8_t*)sendBuffer.data(), numBytesWritten);
+	assert(dataWritten);
+	return true;
 }
 
 bool PacketThread::ReceivePacket(std::shared_ptr<Packet>& packet)
@@ -47,6 +54,31 @@ bool PacketThread::ReceivePacket(std::shared_ptr<Packet>& packet)
 	return Thread::Join();
 }
 
+void PacketThread::PumpPacketSending()
+{
+	// We want to drain as much as we can each pump so that,
+	// in theory, the out-going packet creation rate would
+	// never exceed the out-going packet send rate.  That is
+	// unlikely to ever happen with this program, but I rather
+	// be as correct here as I possibly can in my implementation.
+	while (true)
+	{
+		uint32_t numBytesToSend = this->outgoingPacketBuffer.GetNumStoredBytes();
+		if (numBytesToSend == 0)
+			break;
+
+		std::vector<char> sendBuffer;
+		sendBuffer.resize(numBytesToSend);
+		this->outgoingPacketBuffer.PeakBytes((uint8_t*)sendBuffer.data(), numBytesToSend);
+
+		uint32_t numBytesSent = ::send(this->connectedSocket, sendBuffer.data(), numBytesToSend, 0);
+		if (numBytesSent == 0)
+			break;
+		
+		this->outgoingPacketBuffer.DeleteBytes(numBytesSent);
+	}
+}
+
 /*virtual*/ void PacketThread::Run()
 {
 	RingBuffer ringBuffer(16 * 1024);
@@ -63,6 +95,8 @@ bool PacketThread::ReceivePacket(std::shared_ptr<Packet>& packet)
 		if (!ringBuffer.WriteBytes((const uint8_t*)recvBuffer.data(), numBytesReceived))
 			break;
 
+		// It's really important to drain the buffer as much as possible before we continue.
+		// We don't want to be blocked on the socket with packets pending in the buffer.
 		while (true)
 		{
 			uint32_t numStoredBytes = ringBuffer.GetNumStoredBytes();

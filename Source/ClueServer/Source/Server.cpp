@@ -84,14 +84,37 @@ Server::Server(int numPlayers, int port)
 
 	// The server runs as a simple state machine.
 	this->currentState = std::make_shared<SetupGameState>();
-	while (!this->shutdownSignaled)
+	while (!this->shutdownSignaled && this->currentState.get())
 	{
-		if (!this->currentState.get())
-			break;
-
 		std::shared_ptr<GameState> nextState;
-		if (this->currentState->Run(&this->gameData, nextState))
-			this->currentState = nextState;
+		GameState::Result result = this->currentState->Run(&this->gameData, nextState);
+		switch (result)
+		{
+			case GameState::Result::HaltMachine:
+			{
+				this->currentState.reset();
+				break;
+			}
+			case GameState::Result::LeaveState:
+			{
+				this->currentState = nextState;
+				break;
+			}
+			case GameState::Result::ContinueState:
+			default:
+			{
+				// Something tells me that a better design would never involve a sleep.
+				// We don't have to sleep here, but it seems better than spinning our
+				// wheels as fast as we can while going nowhere.  We could block on a
+				// semaphore for an incoming packet, but we would need a way to interrupt
+				// that if the server thread needs to shutdown.  This is just simpler.
+				::Sleep(60);
+				break;
+			}
+		}
+
+		for (std::shared_ptr<Player>& player : this->gameData.playerArray)
+			player->packetThread.PumpPacketSending();
 	}
 
 	for (std::shared_ptr<Player>& player : this->gameData.playerArray)

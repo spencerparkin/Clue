@@ -123,6 +123,8 @@ void BoardGraph::Regenerate()
 
 	std::shared_ptr<Node> nodeMatrix[CLUE_BOARD_HEIGHT][CLUE_BOARD_WIDTH];
 
+	uint32_t id = 0;
+
 	for (int i = 0; i < CLUE_BOARD_HEIGHT; i++)
 	{
 		for (int j = 0; j < CLUE_BOARD_WIDTH; j++)
@@ -132,7 +134,7 @@ void BoardGraph::Regenerate()
 			if (roomCode >= 0)
 				room = Room(roomCode);
 
-			std::shared_ptr<Node> node = std::make_shared<Node>(room);
+			std::shared_ptr<Node> node = std::make_shared<Node>(id++, room);
 
 			node->location.x = double(j);
 			node->location.y = double(CLUE_BOARD_HEIGHT - 1 - i);
@@ -276,17 +278,32 @@ bool BoardGraph::FindShortestPathBetweenNodes(Node* nodeA, Node* nodeB, std::vec
 	return numHallwayTiles - 1 + ((numRoomTiles > 0) ? 1 : 0);
 }
 
+std::shared_ptr<BoardGraph::Node> BoardGraph::FindNodeWithID(int id)
+{
+	for (std::shared_ptr<Node>& node : this->nodeArray)
+		if (node->id == id)
+			return node;
+
+	return std::shared_ptr<Node>();
+}
+
 //-------------------------------------- BoardGraph::Node --------------------------------------
 
-BoardGraph::Node::Node(std::optional<Room> room)
+BoardGraph::Node::Node(int id, std::optional<Room> room)
 {
+	this->id = id;
+	this->room = room;
 	this->parentNode = nullptr;
 	this->considered = false;
-	this->room = room;
 }
 
 /*virtual*/ BoardGraph::Node::~Node()
 {
+}
+
+uint32_t BoardGraph::Node::GetId() const
+{
+	return this->id;
 }
 
 bool BoardGraph::Node::IsRoom() const

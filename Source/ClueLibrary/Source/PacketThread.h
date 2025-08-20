@@ -2,6 +2,7 @@
 
 #include "Thread.h"
 #include "Packet.h"
+#include "RingBuffer.h"
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <Windows.h>
@@ -23,6 +24,8 @@ namespace Clue
 		bool SendPacket(const std::shared_ptr<Packet> packet);
 		bool ReceivePacket(std::shared_ptr<Packet>& packet);
 
+		void PumpPacketSending();
+
 	protected:
 
 		virtual void Run() override;
@@ -42,5 +45,6 @@ namespace Clue
 		SOCKET connectedSocket;
 		ThreadSafeQueue<std::shared_ptr<Packet>> packetQueue;
 		std::map<uint32_t, std::shared_ptr<PacketClassBase>> packetClassMap;
+		RingBuffer outgoingPacketBuffer;
 	};
 }

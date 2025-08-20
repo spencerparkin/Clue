@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Defines.h"
+#include "Card.h"
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <Windows.h>
@@ -8,9 +9,15 @@
 #include <memory>
 #include <string>
 
-#define CLUE_PACKET_VERSION					0x00000001
-#define CLUE_PACKET_MAGIC					0xDEADBEEF
-#define CLUE_PACKET_TYPE_STRING_PACKET		0x00000001
+#define CLUE_PACKET_VERSION							0x00000001
+#define CLUE_PACKET_MAGIC							0xDEADBEEF
+#define CLUE_PACKET_TYPE_STRING						0x00000001
+#define CLUE_PACKET_TYPE_CHAR_AND_CARDS				0x00000002
+#define CLUE_PACKET_TYPE_PLAYER_INTRO				0x00000003
+#define CLUE_PACKET_TYPE_DICE_ROLL					0x00000004
+#define CLUE_PACKET_TYPE_PLAYER_TRAVEL_REQUESTED	0x00000005
+#define CLUE_PACKET_TYPE_PLAYER_TRAVEL_REJECTED		0x00000006
+#define CLUE_PACKET_TYPE_PLAYER_TRAVEL_ACCEPTED		0x00000007
 
 namespace Clue
 {
@@ -35,7 +42,7 @@ namespace Clue
 	class CLUE_LIBRARY_API StringPacket : public Packet
 	{
 	public:
-		StringPacket(uint32_t packetType = CLUE_PACKET_TYPE_STRING_PACKET);
+		StringPacket(uint32_t packetType = CLUE_PACKET_TYPE_STRING);
 		virtual ~StringPacket();
 
 		virtual bool ReadFromBuffer(const uint8_t* buffer, uint32_t bufferSize, uint32_t& numBytesRead) override;
@@ -54,6 +61,7 @@ namespace Clue
 	public:
 		StructurePacket(uint32_t packetType) : Packet(packetType)
 		{
+			::memset(&this->data, 0, sizeof(T));
 		}
 
 		virtual ~StructurePacket()
@@ -84,6 +92,47 @@ namespace Clue
 
 	public:
 		T data;
+	};
+
+	struct CharacterAndCards
+	{
+		Character character;
+		Card cardArray[CLUE_NUM_CHARACTERS + CLUE_NUM_ROOMS + CLUE_NUM_WEAPONS];
+		uint32_t numCards;
+		uint32_t id;
+	};
+
+	struct PlayerIntroduction
+	{
+		Character character;
+		uint32_t numCards;
+	};
+
+	struct DiceRoll
+	{
+		uint32_t rollAmount;
+	};
+
+	struct PlayerTravelRequested
+	{
+		int nodeId;
+	};
+
+	struct PlayerTravelRejected
+	{
+		enum Type : uint32_t
+		{
+			TARGET_NODE_DOESNT_EXIST,
+			TARGET_NODE_TOO_FAR
+		};
+
+		Type type;
+	};
+
+	struct PlayerTravelAccepted
+	{
+		Character character;
+		int nodeId;
 	};
 
 	/**
