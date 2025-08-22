@@ -180,5 +180,9 @@ WaitForPlayerTravelState::WaitForPlayerTravelState()
 
 	// TODO: Here our next state depends on whether the current player landed in a room or the hallway.
 
+	// TODO: We must enforce that any accustaion made is only done in the room where the accuser is located,
+	//       and an accuser can only make an accusation if they are in a room.  Also, an accusation will
+	//       pull the character in question into that room.  This must be communicated to all clients.
+
 	return Result::HaltMachine;
 }

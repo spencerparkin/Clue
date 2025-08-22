@@ -1,4 +1,5 @@
 #include "Player.h"
+#include "PacketHandler.h"
 
 using namespace Clue;
 
@@ -7,10 +8,21 @@ Player::Player(const std::string& ipAddr, int port)
 	this->ipAddr = ipAddr;
 	this->port = port;
 	this->keepRunning = true;
+	this->packetHandlerMap.insert(std::pair(CLUE_PACKET_TYPE_CHAR_AND_CARDS, std::make_shared<CharAndCardsPacketHandler>()));
 }
 
 /*virtual*/ Player::~Player()
 {
+}
+
+Player::GameData* Player::GetGameData()
+{
+	return &this->gameData;
+}
+
+Clue::PacketThread* Player::GetPacketThread()
+{
+	return this->packetThread.get();
 }
 
 /*virtual*/ bool Player::Join()
@@ -95,7 +107,15 @@ Player::Player(const std::string& ipAddr, int port)
 	::WSACleanup();
 }
 
-/*virtual*/ bool Player::ProcessPacket(std::shared_ptr<Packet> packet)
+/*virtual*/ bool Player::ProcessPacket(const std::shared_ptr<Packet> packet)
 {
+	std::map<uint32_t, std::shared_ptr<PacketHandler>>::iterator iter = this->packetHandlerMap.find(packet->packetType);
+	if (iter == this->packetHandlerMap.end())
+		return false;
+
+	std::shared_ptr<PacketHandler> packetHandler = iter->second;
+	if (!packetHandler->HandlePacket(packet, this))
+		return false;
+
 	return true;
 }

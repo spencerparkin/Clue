@@ -219,6 +219,9 @@ void BoardGraph::ForAllNodes(std::function<bool(const Node*)> callback) const
 
 bool BoardGraph::FindShortestPathBetweenNodes(Node* nodeA, Node* nodeB, std::vector<Node*>& nodeArray)
 {
+	// Note that this function doesn't actually take into account roll cost, espcially when
+	// it comes to secret passages.  So there may be some inaccuracy there.
+
 	nodeArray.clear();
 
 	for (std::shared_ptr<Node>& node : this->nodeArray)

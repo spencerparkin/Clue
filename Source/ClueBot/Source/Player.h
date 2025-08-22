@@ -2,8 +2,12 @@
 
 #include "Card.h"
 #include "PacketThread.h"
+#include "BoardGraph.h"
 #include <string>
 #include <memory>
+#include <optional>
+
+class PacketHandler;
 
 /**
  * A Clue player is very simple.  It just sits around and responds to
@@ -19,12 +23,27 @@ public:
 	virtual bool Join() override;
 	virtual void Run() override;
 
-protected:
-	virtual bool ProcessPacket(std::shared_ptr<Clue::Packet> packet);
+	struct GameData
+	{
+		std::vector<Clue::Card> cardArray;
+		Clue::Character character;
+		Clue::BoardGraph boardGraph;
+		std::optional<Clue::Room> roomTarget;
+		std::shared_ptr<Clue::BoardGraph::Node> nodeOccupied;
+	};
 
-	std::vector<Clue::Card> cardArray;
+	GameData* GetGameData();
+	Clue::PacketThread* GetPacketThread();
+
+protected:
+	virtual bool ProcessPacket(const std::shared_ptr<Clue::Packet> packet);
+
+	GameData gameData;
 	std::string ipAddr;
 	int port;
 	std::shared_ptr<Clue::PacketThread> packetThread;
 	volatile bool keepRunning;
+
+private:
+	std::map<uint32_t, std::shared_ptr<PacketHandler>> packetHandlerMap;
 };
