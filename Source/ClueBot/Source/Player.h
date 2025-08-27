@@ -29,7 +29,7 @@ public:
 		Clue::Character character;
 		Clue::BoardGraph boardGraph;
 		std::optional<Clue::Room> roomTarget;
-		std::shared_ptr<Clue::BoardGraph::Node> nodeOccupied;
+		std::map<Clue::Character, std::shared_ptr<Clue::BoardGraph::Node>> nodeOccupiedMap;
 	};
 
 	GameData* GetGameData();

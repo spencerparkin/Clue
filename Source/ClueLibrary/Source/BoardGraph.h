@@ -31,6 +31,7 @@ namespace Clue
 		bool FindShortestPathBetweenNodes(Node* nodeA, Node* nodeB, std::vector<Node*>& nodeArray);
 		static int CalculatePathCost(const std::vector<Node*>& nodeArray);
 		std::shared_ptr<Node> FindNodeWithID(int id);
+		std::shared_ptr<Node> FindNodeWithRoom(Room room);
 
 		class Node
 		{
@@ -66,6 +67,8 @@ namespace Clue
 		};
 
 		void ForAllNodes(std::function<bool(const Node*)> callback) const;
+
+		const std::vector<std::shared_ptr<Node>>& GetNodeArray() const;
 
 	private:
 		std::vector<std::shared_ptr<Node>> nodeArray;

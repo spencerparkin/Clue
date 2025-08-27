@@ -159,10 +159,10 @@ bool PacketThread::WritePacket(uint8_t* buffer, uint32_t bufferSize, uint32_t& n
 	if (bufferSize < sizeof(Header))
 		return false;
 
-	Header header;
-	header.magic = CLUE_PACKET_MAGIC;
-	header.version = CLUE_PACKET_VERSION;
-	header.packetType = packet->packetType;
+	auto header = reinterpret_cast<Header*>(buffer);
+	header->magic = CLUE_PACKET_MAGIC;
+	header->version = CLUE_PACKET_VERSION;
+	header->packetType = packet->packetType;
 
 	uint8_t* payloadBuffer = &buffer[sizeof(Header)];
 	uint32_t payloadBufferSize = bufferSize - sizeof(Header);

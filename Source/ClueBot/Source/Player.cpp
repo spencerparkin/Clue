@@ -9,6 +9,10 @@ Player::Player(const std::string& ipAddr, int port)
 	this->port = port;
 	this->keepRunning = true;
 	this->packetHandlerMap.insert(std::pair(CLUE_PACKET_TYPE_CHAR_AND_CARDS, std::make_shared<CharAndCardsPacketHandler>()));
+	this->packetHandlerMap.insert(std::pair(CLUE_PACKET_TYPE_PLAYER_INTRO, std::make_shared<PlayerIntroPacketHandler>()));
+	this->packetHandlerMap.insert(std::pair(CLUE_PACKET_TYPE_DICE_ROLL, std::make_shared<DiceRollPacketHandler>()));
+	this->packetHandlerMap.insert(std::pair(CLUE_PACKET_TYPE_PLAYER_TRAVEL_ACCEPTED, std::make_shared< TravelAcceptedHandler>()));
+	this->gameData.boardGraph.Regenerate();
 }
 
 /*virtual*/ Player::~Player()
@@ -96,10 +100,11 @@ Clue::PacketThread* Player::GetPacketThread()
 		// the size of the packet queue, but this is fine for now.
 		std::shared_ptr<Packet> packet;
 		if (!this->packetThread->ReceivePacket(packet))
-			::Sleep(100);
-
-		if (!this->ProcessPacket(packet))
+			::Sleep(500);
+		else if (!this->ProcessPacket(packet))
 			break;
+
+		this->packetThread->PumpPacketSending();
 	}
 
 	this->packetThread->Join();

@@ -99,7 +99,6 @@ namespace Clue
 		Character character;
 		Card cardArray[CLUE_NUM_CHARACTERS + CLUE_NUM_ROOMS + CLUE_NUM_WEAPONS];
 		uint32_t numCards;
-		uint32_t id;
 	};
 
 	struct PlayerIntroduction
@@ -123,7 +122,8 @@ namespace Clue
 		enum Type : uint32_t
 		{
 			TARGET_NODE_DOESNT_EXIST,
-			TARGET_NODE_TOO_FAR
+			TARGET_NODE_TOO_FAR,
+			TARGET_NODE_ALREADY_OCCUPIED
 		};
 
 		Type type;

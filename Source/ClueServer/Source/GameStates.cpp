@@ -46,6 +46,23 @@ SetupGameState::SetupGameState()
 		player->nodeOccupied = gameData->boardGraph.GetCharacterStartLocation(player->character);
 	}
 
+	// Let all players know where all players are located.
+	for (int i = 0; i < (int)gameData->playerArray.size(); i++)
+	{
+		Player* playerA = gameData->playerArray[i].get();
+
+		std::shared_ptr<StructurePacket<PlayerTravelAccepted>> travelPacket = std::make_shared<StructurePacket<PlayerTravelAccepted>>(CLUE_PACKET_TYPE_PLAYER_TRAVEL_ACCEPTED);
+		travelPacket->data.character = playerA->character;
+		travelPacket->data.nodeId = playerA->nodeOccupied->GetId();
+
+		for (int j = 0; j < (int)gameData->playerArray.size(); j++)
+		{
+			Player* playerB = gameData->playerArray[j].get();
+
+			playerB->packetThread.SendPacket(travelPacket);
+		}
+	}
+
 	// Deal cards to our local player representatives or proxies, if you will.
 	while (cardArray.size() > 0)
 	{
@@ -66,7 +83,6 @@ SetupGameState::SetupGameState()
 		std::shared_ptr<StructurePacket<CharacterAndCards>> packet = std::make_shared<StructurePacket<CharacterAndCards>>(CLUE_PACKET_TYPE_CHAR_AND_CARDS);
 		
 		packet->data.character = player->character;
-		packet->data.id = player->nodeOccupied->GetId();
 		packet->data.numCards = (int)player->cardArray.size();
 		for (int j = 0; j < (int)player->cardArray.size(); j++)
 			packet->data.cardArray[j] = player->cardArray[j];
@@ -167,6 +183,17 @@ WaitForPlayerTravelState::WaitForPlayerTravelState()
 		rejectionPacket->data.type = PlayerTravelRejected::TARGET_NODE_TOO_FAR;
 		currentPlayer->packetThread.SendPacket(rejectionPacket);
 		return Result::ContinueState;
+	}
+
+	for (std::shared_ptr<Player> player : gameData->playerArray)
+	{
+		if (player.get() != currentPlayer && player->nodeOccupied == targetNode)
+		{
+			std::shared_ptr<StructurePacket<PlayerTravelRejected>> rejectionPacket = std::make_shared<StructurePacket<PlayerTravelRejected>>(CLUE_PACKET_TYPE_PLAYER_TRAVEL_REJECTED);
+			rejectionPacket->data.type = PlayerTravelRejected::TARGET_NODE_ALREADY_OCCUPIED;
+			currentPlayer->packetThread.SendPacket(rejectionPacket);
+			return Result::ContinueState;
+		}
 	}
 
 	currentPlayer->nodeOccupied = targetNode;

@@ -39,3 +39,12 @@ class DiceRollPacketHandler : public PacketHandler
 public:
 	virtual bool HandlePacket(const std::shared_ptr<Clue::Packet> packet, Player* player) override;
 };
+
+/**
+ * 
+ */
+class TravelAcceptedHandler : public PacketHandler
+{
+public:
+	virtual bool HandlePacket(const std::shared_ptr<Clue::Packet> packet, Player* player) override;
+};

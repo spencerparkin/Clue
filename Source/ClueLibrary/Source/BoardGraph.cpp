@@ -217,6 +217,11 @@ void BoardGraph::ForAllNodes(std::function<bool(const Node*)> callback) const
 			break;
 }
 
+const std::vector<std::shared_ptr<BoardGraph::Node>>& BoardGraph::GetNodeArray() const
+{
+	return this->nodeArray;
+}
+
 bool BoardGraph::FindShortestPathBetweenNodes(Node* nodeA, Node* nodeB, std::vector<Node*>& nodeArray)
 {
 	// Note that this function doesn't actually take into account roll cost, espcially when
@@ -285,6 +290,15 @@ std::shared_ptr<BoardGraph::Node> BoardGraph::FindNodeWithID(int id)
 {
 	for (std::shared_ptr<Node>& node : this->nodeArray)
 		if (node->id == id)
+			return node;
+
+	return std::shared_ptr<Node>();
+}
+
+std::shared_ptr<BoardGraph::Node> BoardGraph::FindNodeWithRoom(Room room)
+{
+	for (std::shared_ptr<Node>& node : this->nodeArray)
+		if (node->room == room)
 			return node;
 
 	return std::shared_ptr<Node>();
