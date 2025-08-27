@@ -15,12 +15,17 @@ Packet::Packet(uint32_t packetType)
 
 //------------------------------------- StringPacket -------------------------------------
 
-StringPacket::StringPacket(uint32_t packetType /*= CLUE_PACKET_TYPE_STRING_PACKET*/) : Packet(packetType)
+StringPacket::StringPacket() : Packet(PacketType())
 {
 }
 
 /*virtual*/ StringPacket::~StringPacket()
 {
+}
+
+/*static*/ uint32_t StringPacket::PacketType()
+{
+	return __COUNTER__;
 }
 
 /*virtual*/ bool StringPacket::ReadFromBuffer(const uint8_t* buffer, uint32_t bufferSize, uint32_t& numBytesRead)
@@ -48,4 +53,46 @@ StringPacket::StringPacket(uint32_t packetType /*= CLUE_PACKET_TYPE_STRING_PACKE
 	buffer[length] = '\0';
 	numBytesWritten = length + 1;
 	return true;
+}
+
+//------------------------------------- CharacterAndCards -------------------------------------
+
+/*static*/ uint32_t CharacterAndCards::PacketType()
+{
+	return __COUNTER__;
+}
+
+//------------------------------------- PlayerIntroduction -------------------------------------
+
+/*static*/ uint32_t PlayerIntroduction::PacketType()
+{
+	return __COUNTER__;
+}
+
+//------------------------------------- DiceRoll -------------------------------------
+
+/*static*/ uint32_t DiceRoll::PacketType()
+{
+	return __COUNTER__;
+}
+
+//------------------------------------- PlayerTravelRequested -------------------------------------
+
+/*static*/ uint32_t PlayerTravelRequested::PacketType()
+{
+	return __COUNTER__;
+}
+
+//------------------------------------- PlayerTravelRejected -------------------------------------
+
+/*static*/ uint32_t PlayerTravelRejected::PacketType()
+{
+	return __COUNTER__;
+}
+
+//------------------------------------- PlayerTravelAccepted -------------------------------------
+
+/*static*/ uint32_t PlayerTravelAccepted::PacketType()
+{
+	return __COUNTER__;
 }

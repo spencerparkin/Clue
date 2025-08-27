@@ -8,10 +8,10 @@ Player::Player(const std::string& ipAddr, int port)
 	this->ipAddr = ipAddr;
 	this->port = port;
 	this->keepRunning = true;
-	this->packetHandlerMap.insert(std::pair(CLUE_PACKET_TYPE_CHAR_AND_CARDS, std::make_shared<CharAndCardsPacketHandler>()));
-	this->packetHandlerMap.insert(std::pair(CLUE_PACKET_TYPE_PLAYER_INTRO, std::make_shared<PlayerIntroPacketHandler>()));
-	this->packetHandlerMap.insert(std::pair(CLUE_PACKET_TYPE_DICE_ROLL, std::make_shared<DiceRollPacketHandler>()));
-	this->packetHandlerMap.insert(std::pair(CLUE_PACKET_TYPE_PLAYER_TRAVEL_ACCEPTED, std::make_shared< TravelAcceptedHandler>()));
+	this->packetHandlerMap.insert(std::pair(CharacterAndCards::PacketType(), std::make_shared<CharAndCardsPacketHandler>()));
+	this->packetHandlerMap.insert(std::pair(PlayerIntroduction::PacketType(), std::make_shared<PlayerIntroPacketHandler>()));
+	this->packetHandlerMap.insert(std::pair(DiceRoll::PacketType(), std::make_shared<DiceRollPacketHandler>()));
+	this->packetHandlerMap.insert(std::pair(PlayerTravelAccepted::PacketType(), std::make_shared<TravelAcceptedHandler>()));
 	this->gameData.boardGraph.Regenerate();
 }
 
@@ -114,7 +114,7 @@ Clue::PacketThread* Player::GetPacketThread()
 
 /*virtual*/ bool Player::ProcessPacket(const std::shared_ptr<Packet> packet)
 {
-	std::map<uint32_t, std::shared_ptr<PacketHandler>>::iterator iter = this->packetHandlerMap.find(packet->packetType);
+	std::map<uint32_t, std::shared_ptr<PacketHandler>>::iterator iter = this->packetHandlerMap.find(packet->GetPacketType());
 	if (iter == this->packetHandlerMap.end())
 		return false;
 

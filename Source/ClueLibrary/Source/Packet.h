@@ -11,13 +11,6 @@
 
 #define CLUE_PACKET_VERSION							0x00000001
 #define CLUE_PACKET_MAGIC							0xDEADBEEF
-#define CLUE_PACKET_TYPE_STRING						0x00000001
-#define CLUE_PACKET_TYPE_CHAR_AND_CARDS				0x00000002
-#define CLUE_PACKET_TYPE_PLAYER_INTRO				0x00000003
-#define CLUE_PACKET_TYPE_DICE_ROLL					0x00000004
-#define CLUE_PACKET_TYPE_PLAYER_TRAVEL_REQUESTED	0x00000005
-#define CLUE_PACKET_TYPE_PLAYER_TRAVEL_REJECTED		0x00000006
-#define CLUE_PACKET_TYPE_PLAYER_TRAVEL_ACCEPTED		0x00000007
 
 namespace Clue
 {
@@ -33,6 +26,9 @@ namespace Clue
 		virtual bool ReadFromBuffer(const uint8_t* buffer, uint32_t bufferSize, uint32_t& numBytesRead) = 0;
 		virtual bool WriteToBuffer(uint8_t* buffer, uint32_t bufferSize, uint32_t& numBytesWritten) const = 0;
 
+		uint32_t GetPacketType() { return this->packetType; }
+
+	private:
 		uint32_t packetType;
 	};
 
@@ -42,8 +38,10 @@ namespace Clue
 	class CLUE_LIBRARY_API StringPacket : public Packet
 	{
 	public:
-		StringPacket(uint32_t packetType = CLUE_PACKET_TYPE_STRING);
+		StringPacket();
 		virtual ~StringPacket();
+
+		static uint32_t PacketType();
 
 		virtual bool ReadFromBuffer(const uint8_t* buffer, uint32_t bufferSize, uint32_t& numBytesRead) override;
 		virtual bool WriteToBuffer(uint8_t* buffer, uint32_t bufferSize, uint32_t& numBytesWritten) const override;
@@ -59,7 +57,7 @@ namespace Clue
 	class StructurePacket : public Packet
 	{
 	public:
-		StructurePacket(uint32_t packetType) : Packet(packetType)
+		StructurePacket() : Packet(PacketType())
 		{
 			::memset(&this->data, 0, sizeof(T));
 		}
@@ -67,6 +65,8 @@ namespace Clue
 		virtual ~StructurePacket()
 		{
 		}
+
+		static uint32_t PacketType() { return T::PacketType(); }
 
 		virtual bool ReadFromBuffer(const uint8_t* buffer, uint32_t bufferSize, uint32_t& numBytesRead) override
 		{
@@ -96,6 +96,8 @@ namespace Clue
 
 	struct CharacterAndCards
 	{
+		static uint32_t PacketType();
+
 		Character character;
 		Card cardArray[CLUE_NUM_CHARACTERS + CLUE_NUM_ROOMS + CLUE_NUM_WEAPONS];
 		uint32_t numCards;
@@ -103,22 +105,30 @@ namespace Clue
 
 	struct PlayerIntroduction
 	{
+		static uint32_t PacketType();
+
 		Character character;
 		uint32_t numCards;
 	};
 
 	struct DiceRoll
 	{
+		static uint32_t PacketType();
+
 		uint32_t rollAmount;
 	};
 
 	struct PlayerTravelRequested
 	{
+		static uint32_t PacketType();
+
 		int nodeId;
 	};
 
 	struct PlayerTravelRejected
 	{
+		static uint32_t PacketType();
+
 		enum Type : uint32_t
 		{
 			TARGET_NODE_DOESNT_EXIST,
@@ -131,6 +141,8 @@ namespace Clue
 
 	struct PlayerTravelAccepted
 	{
+		static uint32_t PacketType();
+
 		Character character;
 		int nodeId;
 	};
@@ -141,7 +153,7 @@ namespace Clue
 	class PacketClassBase
 	{
 	public:
-		virtual std::shared_ptr<Packet> Create(uint32_t packetType) = 0;
+		virtual std::shared_ptr<Packet> Create() = 0;
 	};
 
 	/**
@@ -151,9 +163,9 @@ namespace Clue
 	class PacketClass : public PacketClassBase
 	{
 	public:
-		virtual std::shared_ptr<Packet> Create(uint32_t packetType) override
+		virtual std::shared_ptr<Packet> Create() override
 		{
-			return std::make_shared<T>(packetType);
+			return std::make_shared<T>();
 		}
 	};
 }

@@ -32,6 +32,14 @@ namespace Clue
 
 	private:
 
+		template<typename T>
+		void RegisterPacketClass()
+		{
+			uint32_t packetType = T::PacketType();
+			std::shared_ptr<PacketClassBase> packetClass = std::make_shared<PacketClass<T>>();
+			this->packetClassMap.insert(std::pair<uint32_t, std::shared_ptr<PacketClassBase>>(packetType, packetClass));
+		}
+
 		struct Header
 		{
 			uint32_t magic;

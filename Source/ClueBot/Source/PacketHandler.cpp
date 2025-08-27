@@ -73,7 +73,7 @@ using namespace Clue;
 	assert(0 <= i && i < (int)nodeArray.size());
 	BoardGraph::Node* node = nodeArray[i];
 
-	std::shared_ptr<StructurePacket<PlayerTravelRequested>> travelRequest = std::make_shared<StructurePacket<PlayerTravelRequested>>(CLUE_PACKET_TYPE_PLAYER_TRAVEL_REQUESTED);
+	std::shared_ptr<StructurePacket<PlayerTravelRequested>> travelRequest = std::make_shared<StructurePacket<PlayerTravelRequested>>();
 	travelRequest->data.nodeId = node->GetId();
 	if (!player->GetPacketThread()->SendPacket(travelRequest))
 		return false;

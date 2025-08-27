@@ -9,13 +9,13 @@ PacketThread::PacketThread(SOCKET connectedSocket) : outgoingPacketBuffer(4 * 10
 {
 	this->connectedSocket = connectedSocket;
 
-	this->packetClassMap.insert(std::pair<uint32_t, std::shared_ptr<PacketClassBase>>(uint32_t(CLUE_PACKET_TYPE_STRING), std::make_shared<PacketClass<StringPacket>>()));
-	this->packetClassMap.insert(std::pair<uint32_t, std::shared_ptr<PacketClassBase>>(uint32_t(CLUE_PACKET_TYPE_CHAR_AND_CARDS), std::make_shared<PacketClass<StructurePacket<CharacterAndCards>>>()));
-	this->packetClassMap.insert(std::pair<uint32_t, std::shared_ptr<PacketClassBase>>(uint32_t(CLUE_PACKET_TYPE_PLAYER_INTRO), std::make_shared<PacketClass<StructurePacket<PlayerIntroduction>>>()));
-	this->packetClassMap.insert(std::pair<uint32_t, std::shared_ptr<PacketClassBase>>(uint32_t(CLUE_PACKET_TYPE_DICE_ROLL), std::make_shared<PacketClass<StructurePacket<DiceRoll>>>()));
-	this->packetClassMap.insert(std::pair<uint32_t, std::shared_ptr<PacketClassBase>>(uint32_t(CLUE_PACKET_TYPE_PLAYER_TRAVEL_REQUESTED), std::make_shared<PacketClass<StructurePacket<PlayerTravelRequested>>>()));
-	this->packetClassMap.insert(std::pair<uint32_t, std::shared_ptr<PacketClassBase>>(uint32_t(CLUE_PACKET_TYPE_PLAYER_TRAVEL_REJECTED), std::make_shared<PacketClass<StructurePacket<PlayerTravelRejected>>>()));
-	this->packetClassMap.insert(std::pair<uint32_t, std::shared_ptr<PacketClassBase>>(uint32_t(CLUE_PACKET_TYPE_PLAYER_TRAVEL_ACCEPTED), std::make_shared<PacketClass<StructurePacket<PlayerTravelAccepted>>>()));
+	this->RegisterPacketClass<StringPacket>();
+	this->RegisterPacketClass<StructurePacket<CharacterAndCards>>();
+	this->RegisterPacketClass<StructurePacket<PlayerIntroduction>>();
+	this->RegisterPacketClass<StructurePacket<DiceRoll>>();
+	this->RegisterPacketClass<StructurePacket<PlayerTravelRequested>>();
+	this->RegisterPacketClass<StructurePacket<PlayerTravelRejected>>();
+	this->RegisterPacketClass<StructurePacket<PlayerTravelAccepted>>();
 }
 
 /*virtual*/ PacketThread::~PacketThread()
@@ -139,7 +139,7 @@ bool PacketThread::ReadPacket(const uint8_t* buffer, uint32_t bufferSize, uint32
 		return false;
 
 	std::shared_ptr<PacketClassBase> packetClass = iter->second;
-	packet = packetClass->Create(header.packetType);
+	packet = packetClass->Create();
 
 	const uint8_t* payloadBuffer = &buffer[sizeof(Header)];
 	uint32_t payloadBufferSize = bufferSize - sizeof(Header);
@@ -162,7 +162,7 @@ bool PacketThread::WritePacket(uint8_t* buffer, uint32_t bufferSize, uint32_t& n
 	auto header = reinterpret_cast<Header*>(buffer);
 	header->magic = CLUE_PACKET_MAGIC;
 	header->version = CLUE_PACKET_VERSION;
-	header->packetType = packet->packetType;
+	header->packetType = packet->GetPacketType();
 
 	uint8_t* payloadBuffer = &buffer[sizeof(Header)];
 	uint32_t payloadBufferSize = bufferSize - sizeof(Header);

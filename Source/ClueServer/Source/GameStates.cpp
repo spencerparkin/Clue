@@ -51,7 +51,7 @@ SetupGameState::SetupGameState()
 	{
 		Player* playerA = gameData->playerArray[i].get();
 
-		std::shared_ptr<StructurePacket<PlayerTravelAccepted>> travelPacket = std::make_shared<StructurePacket<PlayerTravelAccepted>>(CLUE_PACKET_TYPE_PLAYER_TRAVEL_ACCEPTED);
+		std::shared_ptr<StructurePacket<PlayerTravelAccepted>> travelPacket = std::make_shared<StructurePacket<PlayerTravelAccepted>>();
 		travelPacket->data.character = playerA->character;
 		travelPacket->data.nodeId = playerA->nodeOccupied->GetId();
 
@@ -80,7 +80,7 @@ SetupGameState::SetupGameState()
 	{
 		Player* player = gameData->playerArray[i].get();
 
-		std::shared_ptr<StructurePacket<CharacterAndCards>> packet = std::make_shared<StructurePacket<CharacterAndCards>>(CLUE_PACKET_TYPE_CHAR_AND_CARDS);
+		std::shared_ptr<StructurePacket<CharacterAndCards>> packet = std::make_shared<StructurePacket<CharacterAndCards>>();
 		
 		packet->data.character = player->character;
 		packet->data.numCards = (int)player->cardArray.size();
@@ -104,7 +104,7 @@ SetupGameState::SetupGameState()
 
 			Player* playerB = gameData->playerArray[j].get();
 
-			std::shared_ptr<StructurePacket<PlayerIntroduction>> packet = std::make_shared<StructurePacket<PlayerIntroduction>>(CLUE_PACKET_TYPE_PLAYER_INTRO);
+			std::shared_ptr<StructurePacket<PlayerIntroduction>> packet = std::make_shared<StructurePacket<PlayerIntroduction>>();
 
 			packet->data.character = playerB->character;
 			packet->data.numCards = (int)playerB->cardArray.size();
@@ -133,7 +133,7 @@ RollForPlayerState::RollForPlayerState()
 
 	Player* currentPlayer = gameData->playerArray[gameData->whoseTurn].get();
 
-	std::shared_ptr<StructurePacket<DiceRoll>> packet = std::make_shared<StructurePacket<DiceRoll>>(CLUE_PACKET_TYPE_DICE_ROLL);
+	std::shared_ptr<StructurePacket<DiceRoll>> packet = std::make_shared<StructurePacket<DiceRoll>>();
 	packet->data.rollAmount = gameData->presentDiceRoll;
 	currentPlayer->packetThread.SendPacket(packet);
 
@@ -166,7 +166,7 @@ WaitForPlayerTravelState::WaitForPlayerTravelState()
 	std::shared_ptr<BoardGraph::Node> targetNode = gameData->boardGraph.FindNodeWithID(playerTravel->data.nodeId);
 	if (!targetNode.get())
 	{
-		std::shared_ptr<StructurePacket<PlayerTravelRejected>> rejectionPacket = std::make_shared<StructurePacket<PlayerTravelRejected>>(CLUE_PACKET_TYPE_PLAYER_TRAVEL_REJECTED);
+		std::shared_ptr<StructurePacket<PlayerTravelRejected>> rejectionPacket = std::make_shared<StructurePacket<PlayerTravelRejected>>();
 		rejectionPacket->data.type = PlayerTravelRejected::TARGET_NODE_DOESNT_EXIST;
 		currentPlayer->packetThread.SendPacket(rejectionPacket);
 		return Result::ContinueState;
@@ -179,7 +179,7 @@ WaitForPlayerTravelState::WaitForPlayerTravelState()
 	int minDiceRollNeeded = BoardGraph::CalculatePathCost(nodeArray);
 	if (gameData->presentDiceRoll < minDiceRollNeeded)
 	{
-		std::shared_ptr<StructurePacket<PlayerTravelRejected>> rejectionPacket = std::make_shared<StructurePacket<PlayerTravelRejected>>(CLUE_PACKET_TYPE_PLAYER_TRAVEL_REJECTED);
+		std::shared_ptr<StructurePacket<PlayerTravelRejected>> rejectionPacket = std::make_shared<StructurePacket<PlayerTravelRejected>>();
 		rejectionPacket->data.type = PlayerTravelRejected::TARGET_NODE_TOO_FAR;
 		currentPlayer->packetThread.SendPacket(rejectionPacket);
 		return Result::ContinueState;
@@ -189,7 +189,7 @@ WaitForPlayerTravelState::WaitForPlayerTravelState()
 	{
 		if (player.get() != currentPlayer && player->nodeOccupied == targetNode)
 		{
-			std::shared_ptr<StructurePacket<PlayerTravelRejected>> rejectionPacket = std::make_shared<StructurePacket<PlayerTravelRejected>>(CLUE_PACKET_TYPE_PLAYER_TRAVEL_REJECTED);
+			std::shared_ptr<StructurePacket<PlayerTravelRejected>> rejectionPacket = std::make_shared<StructurePacket<PlayerTravelRejected>>();
 			rejectionPacket->data.type = PlayerTravelRejected::TARGET_NODE_ALREADY_OCCUPIED;
 			currentPlayer->packetThread.SendPacket(rejectionPacket);
 			return Result::ContinueState;
@@ -198,7 +198,7 @@ WaitForPlayerTravelState::WaitForPlayerTravelState()
 
 	currentPlayer->nodeOccupied = targetNode;
 
-	std::shared_ptr<StructurePacket<PlayerTravelAccepted>> travelPacket = std::make_shared<StructurePacket<PlayerTravelAccepted>>(CLUE_PACKET_TYPE_PLAYER_TRAVEL_ACCEPTED);
+	std::shared_ptr<StructurePacket<PlayerTravelAccepted>> travelPacket = std::make_shared<StructurePacket<PlayerTravelAccepted>>();
 	travelPacket->data.character = currentPlayer->character;
 	travelPacket->data.nodeId = targetNode->GetId();
 
