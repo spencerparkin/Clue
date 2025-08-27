@@ -159,11 +159,11 @@ WaitForPlayerTravelState::WaitForPlayerTravelState()
 	if (!currentPlayer->packetThread.ReceivePacket(packet))
 		return Result::ContinueState;
 
-	auto playerTravel = dynamic_cast<PlayerTravelRequested*>(packet.get());
+	auto playerTravel = dynamic_cast<StructurePacket<PlayerTravelRequested>*>(packet.get());
 	if (!playerTravel)
 		return Result::ContinueState;
 
-	std::shared_ptr<BoardGraph::Node> targetNode = gameData->boardGraph.FindNodeWithID(playerTravel->nodeId);
+	std::shared_ptr<BoardGraph::Node> targetNode = gameData->boardGraph.FindNodeWithID(playerTravel->data.nodeId);
 	if (!targetNode.get())
 	{
 		std::shared_ptr<StructurePacket<PlayerTravelRejected>> rejectionPacket = std::make_shared<StructurePacket<PlayerTravelRejected>>(CLUE_PACKET_TYPE_PLAYER_TRAVEL_REJECTED);

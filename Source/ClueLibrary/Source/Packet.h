@@ -142,8 +142,6 @@ namespace Clue
 	{
 	public:
 		virtual std::shared_ptr<Packet> Create(uint32_t packetType) = 0;
-
-		uint32_t payloadType;
 	};
 
 	/**
