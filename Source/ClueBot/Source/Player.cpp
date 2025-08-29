@@ -96,7 +96,7 @@ Clue::PacketThread* Player::GetPacketThread()
 
 	while (this->keepRunning && this->packetThread->IsRunning())
 	{
-		// We could be faster here if we blocked on a semaphore who's count reflected
+		// We could be faster here if we blocked on a semaphore whose count reflected
 		// the size of the packet queue, but this is fine for now.
 		std::shared_ptr<Packet> packet;
 		if (!this->packetThread->ReceivePacket(packet))

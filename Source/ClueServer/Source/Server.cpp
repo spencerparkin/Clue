@@ -1,5 +1,5 @@
 #include "Server.h"
-#include "GameStates.h"
+#include "Game.h"
 #include <stdio.h>
 #include <format>
 
@@ -67,71 +67,42 @@ Server::Server(int numPlayers, int port)
 	if (result == SOCKET_ERROR)
 		return;
 
-	while (this->gameData.playerArray.size() < this->numPlayers)
+	while (this->playerArray.size() < this->numPlayers)
 	{
-		printf("Waiting for player %d of %d to connect...\n", int(this->gameData.playerArray.size()) + 1, this->numPlayers);
+		printf("Waiting for player %d of %d to connect...\n", int(this->playerArray.size()) + 1, this->numPlayers);
 
 		SOCKET connectedSocket = ::accept(this->socket, nullptr, nullptr);
 		if (connectedSocket == INVALID_SOCKET)
 			return;
 
 		std::shared_ptr<Player> player = std::make_shared<Player>(connectedSocket);
-		this->gameData.playerArray.push_back(player);
+		this->playerArray.push_back(player);
 	}
 
-	for (std::shared_ptr<Player>& player : this->gameData.playerArray)
+	for (std::shared_ptr<Player>& player : this->playerArray)
 		player->Setup();
 
-	// The server runs as a simple state machine.
-	this->currentState = std::make_shared<SetupGameState>();
-	while (!this->shutdownSignaled && this->currentState.get())
-	{
-		std::shared_ptr<GameState> nextState;
-		GameState::Result result = this->currentState->Run(&this->gameData, nextState);
-		switch (result)
-		{
-			case GameState::Result::HaltMachine:
-			{
-				this->currentState.reset();
-				break;
-			}
-			case GameState::Result::LeaveState:
-			{
-				this->currentState = nextState;
-				break;
-			}
-			case GameState::Result::ContinueState:
-			default:
-			{
-				// Something tells me that a better design would never involve a sleep.
-				// We don't have to sleep here, but it seems better than spinning our
-				// wheels as fast as we can while going nowhere.  We could block on a
-				// semaphore for an incoming packet, but we would need a way to interrupt
-				// that if the server thread needs to shutdown.  This is just simpler.
-				::Sleep(60);
-				break;
-			}
-		}
+	GameTask gameTask(PlayGame(this));
 
-		for (std::shared_ptr<Player>& player : this->gameData.playerArray)
+	while (!this->shutdownSignaled && !gameTask.IsDone())
+	{
+		gameTask.Resume();
+
+		for (std::shared_ptr<Player>& player : this->playerArray)
 			player->packetThread.PumpPacketSending();
+
+		// Throttle our speed so that we're not working really hard to do nothing most of the time.
+		// In reality, the game doesn't go super fast anyway.
+		::Sleep(500);
 	}
 
-	for (std::shared_ptr<Player>& player : this->gameData.playerArray)
+	for (std::shared_ptr<Player>& player : this->playerArray)
 		player->Shutdown();
 
 	::WSACleanup();
 }
 
-Server::GameData* Server::GetGameData()
+const std::vector<std::shared_ptr<Player>>& Server::GetPlayerArray()
 {
-	return &this->gameData;
-}
-
-GameState::GameState()
-{
-}
-
-/*virtual*/ GameState::~GameState()
-{
+	return this->playerArray;
 }

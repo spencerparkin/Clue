@@ -9,8 +9,6 @@
 #include <vector>
 #include <memory>
 
-class GameState;
-
 /**
  * 
  */
@@ -23,42 +21,13 @@ public:
 	virtual bool Join() override;
 	virtual void Run() override;
 
-	struct GameData
-	{
-		int whoseTurn;
-		int presentDiceRoll;
-		Clue::Accusation correctAccusation;
-		Clue::BoardGraph boardGraph;
-		std::vector<std::shared_ptr<Player>> playerArray;
-	};
-
-	GameData* GetGameData();
+	const std::vector<std::shared_ptr<Player>>& GetPlayerArray();
 
 private:
 
-	std::shared_ptr<GameState> currentState;
-	GameData gameData;
+	std::vector<std::shared_ptr<Player>> playerArray;
 	int numPlayers;
 	int port;
 	SOCKET socket;
 	volatile bool shutdownSignaled;
-};
-
-/**
- * 
- */
-class GameState
-{
-public:
-	GameState();
-	virtual ~GameState();
-
-	enum Result
-	{
-		ContinueState,
-		LeaveState,
-		HaltMachine
-	};
-
-	virtual Result Run(Server::GameData* gameData, std::shared_ptr<GameState>& nextState) = 0;
 };
