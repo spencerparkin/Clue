@@ -10,7 +10,7 @@ using namespace Clue;
 
 //-------------------------------------- GameTask --------------------------------------
 
-GameTask::GameTask(GameTask&& gameTask) : coroHandle(std::exchange(gameTask.coroHandle, nullptr))
+GameTask::GameTask(GameTask&& gameTask) noexcept : coroHandle(std::exchange(gameTask.coroHandle, nullptr))
 {
 }
 
@@ -34,7 +34,17 @@ void GameTask::Resume()
 	this->coroHandle.resume();
 }
 
+bool GameTask::GotPacketFromPlayer()
+{
+	return this->coroHandle.promise().GotPacketFromPlayer();
+}
+
 //-------------------------------------- GameTask::promise_type --------------------------------------
+
+GameTask::promise_type::promise_type()
+{
+	this->packetNeededFromPlayer = nullptr;
+}
 
 GameTask  GameTask::promise_type::get_return_object()
 {
@@ -51,9 +61,10 @@ std::suspend_always GameTask::promise_type::final_suspend() noexcept
 	return std::suspend_always();
 }
 
-std::suspend_always GameTask::promise_type::yield_value(int) noexcept
+GameTask::PacketAwaiter GameTask::promise_type::await_transform(Player* packetNeededFromPlayer) noexcept
 {
-	return std::suspend_always();
+	this->packetNeededFromPlayer = packetNeededFromPlayer;
+	return PacketAwaiter(this);
 }
 
 void GameTask::promise_type::return_void() noexcept
@@ -61,6 +72,40 @@ void GameTask::promise_type::return_void() noexcept
 }
 
 void GameTask::promise_type::unhandled_exception() noexcept
+{
+}
+
+std::shared_ptr<Clue::Packet> GameTask::promise_type::GetPlayerPacket()
+{
+	return this->playerPacket;
+}
+
+bool GameTask::promise_type::GotPacketFromPlayer()
+{
+	if (!this->packetNeededFromPlayer)
+		return false;
+
+	return this->packetNeededFromPlayer->packetThread.ReceivePacket(this->playerPacket);
+}
+
+//-------------------------------------- GameTask::PacketAwaiter --------------------------------------
+
+GameTask::PacketAwaiter::PacketAwaiter(promise_type* promise)
+{
+	this->promise = promise;
+}
+
+bool GameTask::PacketAwaiter::await_ready() const noexcept
+{
+	return false;
+}
+
+std::shared_ptr<Packet> GameTask::PacketAwaiter::await_resume() const noexcept
+{
+	return this->promise->GetPlayerPacket();
+}
+
+void GameTask::PacketAwaiter::await_suspend(std::coroutine_handle<promise_type> coroHandle) const noexcept
 {
 }
 
@@ -184,9 +229,7 @@ GameTask PlayGame(Server* server)
 		std::shared_ptr<BoardGraph::Node> targetNode;
 		while (true)
 		{
-			std::shared_ptr<Packet> playerTravelPacket;
-			while (!currentPlayer->packetThread.ReceivePacket(playerTravelPacket))
-				co_yield 0;
+			std::shared_ptr<Packet> playerTravelPacket = co_await currentPlayer;
 
 			auto playerTravel = dynamic_cast<StructurePacket<PlayerTravelRequested>*>(playerTravelPacket.get());
 			if (!playerTravel)

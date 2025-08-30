@@ -88,12 +88,15 @@ Server::Server(int numPlayers, int port)
 	{
 		gameTask.Resume();
 
-		for (std::shared_ptr<Player>& player : this->playerArray)
-			player->packetThread.PumpPacketSending();
+		while (!gameTask.GotPacketFromPlayer())
+		{
+			for (std::shared_ptr<Player>& player : this->playerArray)
+				player->packetThread.PumpPacketSending();
 
-		// Throttle our speed so that we're not working really hard to do nothing most of the time.
-		// In reality, the game doesn't go super fast anyway.
-		::Sleep(500);
+			// Throttle our speed so that we're not working really hard to do nothing most of the time.
+			// In reality, the game doesn't go super fast anyway.
+			::Sleep(500);
+		}
 	}
 
 	for (std::shared_ptr<Player>& player : this->playerArray)
