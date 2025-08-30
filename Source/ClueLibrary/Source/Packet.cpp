@@ -96,3 +96,80 @@ StringPacket::StringPacket() : Packet(PacketType())
 {
 	return __COUNTER__;
 }
+
+//------------------------------------- PlayerCanMakeAccusation -------------------------------------
+
+/*static*/ uint32_t PlayerCanMakeAccusation::PacketType()
+{
+	return __COUNTER__;
+}
+
+//------------------------------------- PlayerMakesAccusation -------------------------------------
+
+/*static*/ uint32_t PlayerMakesAccusation::PacketType()
+{
+	return __COUNTER__;
+}
+
+//------------------------------------- PlayerAccusationRejected -------------------------------------
+
+/*static*/ uint32_t PlayerAccusationRejected::PacketType()
+{
+	return __COUNTER__;
+}
+
+//------------------------------------- PlayerMustRefuteIfPossible -------------------------------------
+
+/*static*/ uint32_t PlayerMustRefuteIfPossible::PacketType()
+{
+	return __COUNTER__;
+}
+
+//------------------------------------- PlayerAccustaionRefute -------------------------------------
+
+/*static*/ uint32_t PlayerAccustaionRefute::PacketType()
+{
+	return __COUNTER__;
+}
+
+//------------------------------------- PresentAccusation -------------------------------------
+
+/*static*/ uint32_t PresentAccusation::PacketType()
+{
+	return __COUNTER__;
+}
+
+//------------------------------------- PlayerRefuteRejected -------------------------------------
+
+/*static*/ uint32_t PlayerRefuteRejected::PacketType()
+{
+	return __COUNTER__;
+}
+
+//------------------------------------- AccusationRefuted -------------------------------------
+
+/*static*/ uint32_t AccusationRefuted::PacketType()
+{
+	return __COUNTER__;
+}
+
+//------------------------------------- AccusationRefutedWithCard -------------------------------------
+
+/*static*/ uint32_t AccusationRefutedWithCard::PacketType()
+{
+	return __COUNTER__;
+}
+
+//------------------------------------- AccusationCouldNotBeRefuted -------------------------------------
+
+/*static*/ uint32_t AccusationCouldNotBeRefuted::PacketType()
+{
+	return __COUNTER__;
+}
+
+//------------------------------------- FinalAccusationResult -------------------------------------
+
+/*static*/ uint32_t FinalAccusationResult::PacketType()
+{
+	return __COUNTER__;
+}

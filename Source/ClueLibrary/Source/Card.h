@@ -54,7 +54,7 @@ namespace Clue
 	{
 	public:
 
-		enum Type
+		enum Type : uint32_t
 		{
 			RoomType,
 			WeaponType,

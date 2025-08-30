@@ -147,6 +147,105 @@ namespace Clue
 		int nodeId;
 	};
 
+	struct PlayerCanMakeAccusation
+	{
+		static uint32_t PacketType();
+
+		Room room;
+	};
+
+	struct PlayerMakesAccusation
+	{
+		static uint32_t PacketType();
+
+		enum Flag
+		{
+			PASS			= 0x00000001,
+			FINAL			= 0x00000002
+		};
+
+		Accusation accusation;
+		uint32_t flags;
+	};
+
+	struct PlayerAccusationRejected
+	{
+		static uint32_t PacketType();
+
+		enum Type : uint32_t
+		{
+			INVALID_ROOM
+		};
+
+		Type type;
+	};
+
+	struct PlayerMustRefuteIfPossible
+	{
+		static uint32_t PacketType();
+
+		Accusation accusation;
+	};
+
+	struct PlayerAccustaionRefute
+	{
+		static uint32_t PacketType();
+
+		Card card;
+		uint32_t cannotRefute;
+	};
+
+	struct PresentAccusation
+	{
+		static uint32_t PacketType();
+
+		Character accuser;
+		Accusation accusation;
+	};
+
+	struct PlayerRefuteRejected
+	{
+		static uint32_t PacketType();
+
+		enum Type : uint32_t
+		{
+			CARD_NOT_OWNED,
+			CAN_REFUTE_BUT_DIDNT
+		};
+
+		Type type;
+	};
+
+	struct AccusationRefuted
+	{
+		static uint32_t PacketType();
+
+		Character refuter;
+	};
+
+	struct AccusationRefutedWithCard
+	{
+		static uint32_t PacketType();
+
+		Character refuter;
+		Card card;
+	};
+
+	struct AccusationCouldNotBeRefuted
+	{
+		static uint32_t PacketType();
+
+		Character character;
+	};
+
+	struct FinalAccusationResult
+	{
+		static uint32_t PacketType();
+
+		Character accuser;
+		uint32_t isCorrect;
+	};
+
 	/**
 	 * 
 	 */

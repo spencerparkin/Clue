@@ -113,9 +113,6 @@ void GameTask::PacketAwaiter::await_suspend(std::coroutine_handle<promise_type> 
 
 GameTask PlayGame(Server* server)
 {
-	int whoseTurn = 0;
-	int presentDiceRoll = 0;
-
 	Clue::BoardGraph boardGraph;
 	boardGraph.Regenerate();
 
@@ -214,85 +211,227 @@ GameTask PlayGame(Server* server)
 	}
 
 	// We now enter the main game loop.
+	int whoseTurn = 0;
 	while (true)
 	{
-		// Roll for the current player.
-		presentDiceRoll = Card::RandomInteger(1, 6) + Card::RandomInteger(1, 6);
+		// TODO: If all players are disqualified, end the game.  I suppose that could happen if everyone is just gets it wrong.
 
-		// Tell the current player what their dice roll is.  This also prompts them to request a board travel.
 		Player* currentPlayer = playerArray[whoseTurn].get();
-		std::shared_ptr<StructurePacket<DiceRoll>> diceRollPacket = std::make_shared<StructurePacket<DiceRoll>>();
-		diceRollPacket->data.rollAmount = presentDiceRoll;
-		currentPlayer->packetThread.SendPacket(diceRollPacket);
-
-		// Persist in getting a valid travel packet from the current player.
-		std::shared_ptr<BoardGraph::Node> targetNode;
-		while (true)
+		if (!currentPlayer->disqualified)
 		{
-			std::shared_ptr<Packet> playerTravelPacket = co_await currentPlayer;
+			// Roll for the current player.
+			int presentDiceRoll = Card::RandomInteger(1, 6) + Card::RandomInteger(1, 6);
 
-			auto playerTravel = dynamic_cast<StructurePacket<PlayerTravelRequested>*>(playerTravelPacket.get());
-			if (!playerTravel)
-				continue;
+			// Tell the current player what their dice roll is.  This also prompts them to request a board travel.
+			std::shared_ptr<StructurePacket<DiceRoll>> diceRollPacket = std::make_shared<StructurePacket<DiceRoll>>();
+			diceRollPacket->data.rollAmount = presentDiceRoll;
+			currentPlayer->packetThread.SendPacket(diceRollPacket);
 
-			targetNode = boardGraph.FindNodeWithID(playerTravel->data.nodeId);
-			if (!targetNode.get())
+			// Persist in getting a valid travel packet from the current player.
+			std::shared_ptr<BoardGraph::Node> targetNode;
+			while (true)
 			{
-				std::shared_ptr<StructurePacket<PlayerTravelRejected>> rejectionPacket = std::make_shared<StructurePacket<PlayerTravelRejected>>();
-				rejectionPacket->data.type = PlayerTravelRejected::TARGET_NODE_DOESNT_EXIST;
-				currentPlayer->packetThread.SendPacket(rejectionPacket);
-				continue;
-			}
+				std::shared_ptr<Packet> playerTravelPacket = co_await currentPlayer;
 
-			std::vector<BoardGraph::Node*> nodeArray;
-			bool pathFound = boardGraph.FindShortestPathBetweenNodes(currentPlayer->nodeOccupied.get(), targetNode.get(), nodeArray);
-			assert(pathFound);
+				auto playerTravel = dynamic_cast<StructurePacket<PlayerTravelRequested>*>(playerTravelPacket.get());
+				if (!playerTravel)
+					continue;
 
-			int minDiceRollNeeded = BoardGraph::CalculatePathCost(nodeArray);
-			if (presentDiceRoll < minDiceRollNeeded)
-			{
-				std::shared_ptr<StructurePacket<PlayerTravelRejected>> rejectionPacket = std::make_shared<StructurePacket<PlayerTravelRejected>>();
-				rejectionPacket->data.type = PlayerTravelRejected::TARGET_NODE_TOO_FAR;
-				currentPlayer->packetThread.SendPacket(rejectionPacket);
-				continue;
-			}
-
-			bool alreadyOccupied = false;
-			for (std::shared_ptr<Player> player : playerArray)
-			{
-				if (player.get() != currentPlayer && player->nodeOccupied == targetNode)
+				targetNode = boardGraph.FindNodeWithID(playerTravel->data.nodeId);
+				if (!targetNode.get())
 				{
 					std::shared_ptr<StructurePacket<PlayerTravelRejected>> rejectionPacket = std::make_shared<StructurePacket<PlayerTravelRejected>>();
-					rejectionPacket->data.type = PlayerTravelRejected::TARGET_NODE_ALREADY_OCCUPIED;
+					rejectionPacket->data.type = PlayerTravelRejected::TARGET_NODE_DOESNT_EXIST;
 					currentPlayer->packetThread.SendPacket(rejectionPacket);
-					alreadyOccupied = true;
-					break;
+					continue;
 				}
+
+				std::vector<BoardGraph::Node*> nodeArray;
+				bool pathFound = boardGraph.FindShortestPathBetweenNodes(currentPlayer->nodeOccupied.get(), targetNode.get(), nodeArray);
+				assert(pathFound);
+
+				int minDiceRollNeeded = BoardGraph::CalculatePathCost(nodeArray);
+				if (presentDiceRoll < minDiceRollNeeded)
+				{
+					std::shared_ptr<StructurePacket<PlayerTravelRejected>> rejectionPacket = std::make_shared<StructurePacket<PlayerTravelRejected>>();
+					rejectionPacket->data.type = PlayerTravelRejected::TARGET_NODE_TOO_FAR;
+					currentPlayer->packetThread.SendPacket(rejectionPacket);
+					continue;
+				}
+
+				bool alreadyOccupied = false;
+				for (std::shared_ptr<Player> player : playerArray)
+				{
+					if (player.get() != currentPlayer && player->nodeOccupied == targetNode)
+					{
+						std::shared_ptr<StructurePacket<PlayerTravelRejected>> rejectionPacket = std::make_shared<StructurePacket<PlayerTravelRejected>>();
+						rejectionPacket->data.type = PlayerTravelRejected::TARGET_NODE_ALREADY_OCCUPIED;
+						currentPlayer->packetThread.SendPacket(rejectionPacket);
+						alreadyOccupied = true;
+						break;
+					}
+				}
+
+				if (alreadyOccupied)
+					continue;
+
+				break;
 			}
 
-			if (alreadyOccupied)
-				continue;
+			// Move the player to the new location.
+			currentPlayer->nodeOccupied = targetNode;
 
-			break;
+			std::shared_ptr<StructurePacket<PlayerTravelAccepted>> travelPacket = std::make_shared<StructurePacket<PlayerTravelAccepted>>();
+			travelPacket->data.character = currentPlayer->character;
+			travelPacket->data.nodeId = targetNode->GetId();
+
+			for (std::shared_ptr<Player> player : playerArray)
+				player->packetThread.SendPacket(travelPacket);
+
+			// TODO: There is a rule that you can't make an accusation in the same room on consecutive turns.
+			//       I'm just going to ignore that for now, but will revisit it later.
+			if (currentPlayer->nodeOccupied->IsRoom())
+			{
+				auto playerCanAccusePacket = std::make_shared<StructurePacket<PlayerCanMakeAccusation>>();
+				playerCanAccusePacket->data.room = currentPlayer->nodeOccupied->GetRoom().value();
+				currentPlayer->packetThread.SendPacket(playerCanAccusePacket);
+
+				// Persist in getting a valid accustaion from the player.
+				Accusation currentAccusation;
+				bool pass = false;
+				bool isFinalAccusation = false;
+				while (true)
+				{
+					std::shared_ptr<Packet> playerAccusationPacket = co_await currentPlayer;
+
+					auto playerAccusation = dynamic_cast<StructurePacket<PlayerMakesAccusation>*>(playerAccusationPacket.get());
+					if (!playerAccusation)
+						continue;
+
+					if (playerAccusation->data.accusation.room != currentPlayer->nodeOccupied->GetRoom().value())
+					{
+						auto rejectionPacket = std::make_shared<StructurePacket<PlayerAccusationRejected>>();
+						rejectionPacket->data.type = PlayerAccusationRejected::INVALID_ROOM;
+						currentPlayer->packetThread.SendPacket(rejectionPacket);
+						continue;
+					}
+
+					currentAccusation = playerAccusation->data.accusation;
+					pass = (playerAccusation->data.flags & PlayerMakesAccusation::Flag::PASS) != 0;
+					isFinalAccusation = (playerAccusation->data.flags & PlayerMakesAccusation::Flag::FINAL) != 0;
+					break;
+				}
+
+				// A player can choose to pass on making an accusation.  They might do this if
+				// they want to camp out in the room that they're in.
+				if (!pass)
+				{
+					// Let everyone know what the current accusation is.
+					for (int i = 0; i < playerArray.size(); i++)
+					{
+						Player* player = playerArray[i].get();
+						auto presentAccusationPacket = std::make_shared<StructurePacket<PresentAccusation>>();
+						presentAccusationPacket->data.accuser = currentPlayer->character;
+						presentAccusationPacket->data.accusation = currentAccusation;
+						player->packetThread.SendPacket(presentAccusationPacket);
+					}
+
+					// TODO: There is a rule where an accusation pulls a player into the room in question if
+					//       they are the suspect in question.  I'm just going to ignore that for now, but will
+					//       revisit it later.  To make it happen, locate the player and, if found, choose a
+					//       free location in the room, then send a TavelAccepted packet to all players.
+
+					if (isFinalAccusation)
+					{
+						auto finalAccusationResultPacket = std::make_shared<StructurePacket<FinalAccusationResult>>();
+						finalAccusationResultPacket->data.accuser = currentPlayer->character;
+						finalAccusationResultPacket->data.isCorrect = (correctAccusation == currentAccusation);
+
+						for (std::shared_ptr<Player> player : playerArray)
+							player->packetThread.SendPacket(finalAccusationResultPacket);
+
+						if (correctAccusation != currentAccusation)
+							currentPlayer->disqualified = true;
+						else
+						{
+							// TODO: Probably need a bit more here.
+							co_return;
+						}
+					}
+					else
+					{
+						for (int i = 0; i < playerArray.size() - 1; i++)
+						{
+							int j = (whoseTurn + i + 1) % playerArray.size();
+							Player* player = playerArray[j].get();
+
+							auto playerMustRefutePacket = std::make_shared<StructurePacket<PlayerMustRefuteIfPossible>>();
+							playerMustRefutePacket->data.accusation = currentAccusation;
+							player->packetThread.SendPacket(playerMustRefutePacket);
+
+							// Persist in getting a valid refute result.
+							PlayerAccustaionRefute refute{};
+							while (true)
+							{
+								std::shared_ptr<Packet> refutePacket = co_await player;
+
+								auto refuteResultPacket = dynamic_cast<StructurePacket<PlayerAccustaionRefute>*>(refutePacket.get());
+								if (!refuteResultPacket)
+									continue;
+
+								if (refuteResultPacket->data.cannotRefute)
+								{
+									if (player->CanRefute(currentAccusation))
+									{
+										auto refuteRejectPacket = std::make_shared<StructurePacket<PlayerRefuteRejected>>();
+										refuteRejectPacket->data.type = PlayerRefuteRejected::Type::CAN_REFUTE_BUT_DIDNT;
+										player->packetThread.SendPacket(refuteRejectPacket);
+										continue;
+									}
+								}
+								else
+								{
+									if (!player->HasCard(refuteResultPacket->data.card))
+									{
+										auto refuteRejectPacket = std::make_shared<StructurePacket<PlayerRefuteRejected>>();
+										refuteRejectPacket->data.type = PlayerRefuteRejected::Type::CARD_NOT_OWNED;
+										player->packetThread.SendPacket(refuteRejectPacket);
+										continue;
+									}
+								}
+
+								refute = refuteResultPacket->data;
+								break;
+							}
+
+							if (refute.cannotRefute)
+							{
+								auto notRefutedPacket = std::make_shared<StructurePacket<AccusationCouldNotBeRefuted>>();
+								notRefutedPacket->data.character = player->character;
+								for (int k = 0; k < playerArray.size(); k++)
+									playerArray[k]->packetThread.SendPacket(notRefutedPacket);
+							}
+							else
+							{
+								auto refutedWithCardPacket = std::make_shared<StructurePacket<AccusationRefutedWithCard>>();
+								refutedWithCardPacket->data.refuter = player->character;
+								refutedWithCardPacket->data.card = refute.card;
+								currentPlayer->packetThread.SendPacket(refutedWithCardPacket);
+
+								auto accusationRefutedPacket = std::make_shared<StructurePacket<AccusationRefuted>>();
+								accusationRefutedPacket->data.refuter = player->character;
+								for (int k = 0; k < playerArray.size(); k++)
+									if (playerArray[k].get() != currentPlayer)
+										playerArray[k]->packetThread.SendPacket(accusationRefutedPacket);
+
+								// As soon as we encounter a player that could refute the accusation, we move on.
+								break;
+							}
+						}
+					}
+				}
+			}
 		}
-
-		// Move the player to the new location.
-		currentPlayer->nodeOccupied = targetNode;
-
-		std::shared_ptr<StructurePacket<PlayerTravelAccepted>> travelPacket = std::make_shared<StructurePacket<PlayerTravelAccepted>>();
-		travelPacket->data.character = currentPlayer->character;
-		travelPacket->data.nodeId = targetNode->GetId();
-
-		for (std::shared_ptr<Player> player : playerArray)
-			player->packetThread.SendPacket(travelPacket);
-
-		// TODO: Write logic for making accusations, refuting them, etc., here.
-
-		// TODO: If the player landed in a room then they have the option of making an accusation.
-
-		// TODO: We must enforce that any accustaion made is only done in the room where the accuser is located,
-		//       and an accuser can only make an accusation if they are in a room.  Also, an accusation will
-		//       pull the character in question into that room.  This must be communicated to all clients.
 
 		// Finally, end the player's turn and loop around to begin the next player's turn.
 		whoseTurn = (whoseTurn + 1) % playerArray.size();
