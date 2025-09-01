@@ -3,6 +3,8 @@
 #include "Card.h"
 #include <vector>
 #include <list>
+#include <memory>
+#include <optional>
 
 /**
  * Note that this class does not solve the game of clue entirely on its own.  It must
@@ -22,9 +24,19 @@
  */
 class ClueSolver
 {
+	friend class HasNoneOfHint;
+	friend class HasAtLeastOneOfHint;
+
 public:
 	ClueSolver();
 	virtual ~ClueSolver();
+
+	enum KnowledgeElement
+	{
+		OWNED,
+		NOT_OWNED,
+		OWNER_UNKNOWN
+	};
 
 	struct CardHolder
 	{
@@ -36,37 +48,56 @@ public:
 		uint32_t numCards;
 	};
 
-	struct Hint
+	class Hint
 	{
-		enum Type
-		{
-			HAS_NONE_OF,
-			HAS_AT_LEAST_ONE_OF
-		};
+	public:
+		Hint(Clue::Character character);
 
-		uint32_t cardHolder;
-		std::vector<int> cardArray;
+		/**
+		 * Apply the hint to the knowledge matrix.  Return true if and only if
+		 * the hint can now be discarded.  Also, return the number of changes
+		 * made to the knowledge matrix.
+		 */
+		virtual bool Apply(ClueSolver* clueSolver, uint32_t& numChanges) = 0;
+
+		Clue::Character character;
+		std::vector<Clue::Card> cardArray;
+	};
+
+	class HasNoneOfHint : public Hint
+	{
+	public:
+		HasNoneOfHint(Clue::Character character);
+
+		virtual bool Apply(ClueSolver* clueSolver, uint32_t& numChanges) override;
+	};
+
+	class HasAtLeastOneOfHint : public Hint
+	{
+	public:
+		HasAtLeastOneOfHint(Clue::Character character);
+
+		virtual bool Apply(ClueSolver* clueSolver, uint32_t& numChanges) override;
 	};
 
 	void Clear();
 	void Reset(const std::vector<CardHolder>& givenCardHolderArray);
-	void AddHint(const Hint& hint);
+	void AddHint(std::shared_ptr<Hint> hint);
 	void Reduce();
 	bool Solve(Clue::Accusation& correctAccusation) const;
+	Clue::Accusation GetRecommendedAccusation() const;
+
+	int GetColumnForCard(const Clue::Card& card) const;
+	int GetRowForCharacter(Clue::Character character) const;
 
 private:
 
-	enum KnowledgeElement
-	{
-		OWNED,
-		NOT_OWNED,
-		OWNER_UNKNOWN
-	};
+	void ReduceMatrix();
 
 	// The rows are card holders.  The columns are cards.
 	KnowledgeElement** knowledgeMatrix;
 
 	std::vector<Clue::Card> cardArray;
 	std::vector<CardHolder> cardHolderArray;
-	std::list<Hint> hintList;
+	std::list<std::shared_ptr<Hint>> hintList;
 };
