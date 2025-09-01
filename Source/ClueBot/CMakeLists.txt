@@ -7,6 +7,8 @@ set(CLUE_BOT_SOURCE
 	Source/Player.h
 	Source/PacketHandler.cpp
 	Source/PacketHandler.h
+	Source/ClueSolver.cpp
+	Source/ClueSolver.h
 )
 
 source_group("Source" TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${CLUE_BOT_SOURCE})

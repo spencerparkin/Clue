@@ -113,6 +113,12 @@ void GameTask::PacketAwaiter::await_suspend(std::coroutine_handle<promise_type> 
 
 GameTask PlayGame(Server* server)
 {
+	// Note that I typically never let a subroutine get this long or
+	// nest as much as this one does, but right now, I just don't
+	// feel like factoring parts of the routine out.  I'm okay with
+	// how it is for now, and code foldering seems a reasonable
+	// solution to reading it for now.
+
 	Clue::BoardGraph boardGraph;
 	boardGraph.Regenerate();
 
