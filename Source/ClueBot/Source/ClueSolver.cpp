@@ -58,6 +58,7 @@ void ClueSolver::Reduce()
 	// If an element is changed to OWNED, then all other elements in the column must be NOT_OWNED.
 	// If all elements in a column are NOT_OWNED except that one is UNKNOWN, then that UNKNOWN becomes OWNED.
 	// If the number of UNKNOWN elements in a row equals the number of cards a card holder has minus the number of cards we know they have, then they become OWNED.
+	// If the number of OWNED elements in a row equals the number of cards a card holder has, then the rest become NOT_OWNED.
 
 	// TODO: We must blow up here or assert or something if we get contradictory information.
 }
