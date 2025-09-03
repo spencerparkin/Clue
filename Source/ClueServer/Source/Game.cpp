@@ -200,27 +200,34 @@ GameTask PlayGame(Server* server)
 	{
 		Player* playerA = playerArray[i].get();
 
+		std::shared_ptr<StructurePacket<PlayerIntroduction>> introPacket = std::make_shared<StructurePacket<PlayerIntroduction>>();
+		::memset(introPacket->data.opponentArray, 0, sizeof(introPacket->data.opponentArray));
+		PlayerIntroduction::Opponent* opponent = introPacket->data.opponentArray;
+		introPacket->data.numOpponents = 0;
+
 		for (int j = 0; j < (int)playerArray.size(); j++)
 		{
 			if (i == j)
 				continue;
 
+			assert(introPacket->data.numOpponents < sizeof(introPacket->data.opponentArray) / sizeof(PlayerIntroduction::Opponent));
+
 			Player* playerB = playerArray[j].get();
 
-			std::shared_ptr<StructurePacket<PlayerIntroduction>> packet = std::make_shared<StructurePacket<PlayerIntroduction>>();
-
-			packet->data.character = playerB->character;
-			packet->data.numCards = (int)playerB->cardArray.size();
-
-			playerA->packetThread.SendPacket(packet);
+			opponent->character = playerB->character;
+			opponent->numCards = (int)playerB->cardArray.size();
+			
+			introPacket->data.numOpponents++;
 		}
+
+		playerA->packetThread.SendPacket(introPacket);
 	}
 
 	// We now enter the main game loop.
 	int whoseTurn = 0;
 	while (true)
 	{
-		// TODO: If all players are disqualified, end the game.  I suppose that could happen if everyone is just gets it wrong.
+		// TODO: If all players are disqualified, end the game.  I suppose that could happen if everyone just gets it wrong.
 
 		Player* currentPlayer = playerArray[whoseTurn].get();
 		if (!currentPlayer->disqualified)

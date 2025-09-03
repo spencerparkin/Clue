@@ -107,8 +107,14 @@ namespace Clue
 	{
 		static uint32_t PacketType();
 
-		Character character;
-		uint32_t numCards;
+		struct Opponent
+		{
+			Character character;
+			uint32_t numCards;
+		};
+
+		Opponent opponentArray[CLUE_NUM_CHARACTERS];
+		uint32_t numOpponents;
 	};
 
 	struct DiceRoll

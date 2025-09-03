@@ -25,6 +25,40 @@ using namespace Clue;
 
 /*virtual*/ bool PlayerIntroPacketHandler::HandlePacket(const std::shared_ptr<Packet> packet, Player* player)
 {
+	auto* structurePacket = dynamic_cast<const StructurePacket<PlayerIntroduction>*>(packet.get());
+	if (!structurePacket)
+		return false;
+
+	Player::GameData* gameData = player->GetGameData();
+
+	std::vector<ClueSolver::CardHolder> cardHolderArray;
+	
+	ClueSolver::CardHolder playerCardHolder;
+	playerCardHolder.character = gameData->character;
+	playerCardHolder.numCards = (int)gameData->cardArray.size();
+	cardHolderArray.push_back(playerCardHolder);
+
+	for (uint32_t i = 0; i < structurePacket->data.numOpponents; i++)
+	{
+		const PlayerIntroduction::Opponent* opponent = &structurePacket->data.opponentArray[i];
+	
+		ClueSolver::CardHolder cardHolder;
+		cardHolder.character = opponent->character;
+		cardHolder.numCards = opponent->numCards;
+		cardHolderArray.push_back(cardHolder);
+	}
+
+	gameData->solver.Reset(cardHolderArray);
+
+	for (const Card& card : gameData->cardArray)
+	{
+		auto hint = std::make_shared<ClueSolver::HasAtLeastOneOfHint>(gameData->character);
+		hint->cardArray.push_back(card);
+		gameData->solver.AddHint(hint);
+	}
+
+	gameData->solver.Reduce();
+
 	return true;
 }
 
@@ -40,6 +74,7 @@ using namespace Clue;
 	if (!gameData->roomTarget.has_value())
 	{
 		// TODO: Here we should try to choose a room intelligently.  For now, just choose a random room.
+		//       Use the solver.GetRecommendedAccusation function.
 
 		const std::vector<std::shared_ptr<BoardGraph::Node>>& nodeArray = gameData->boardGraph.GetNodeArray();
 		std::vector<std::shared_ptr<BoardGraph::Node>> roomArray;

@@ -3,6 +3,7 @@
 #include "Card.h"
 #include "PacketThread.h"
 #include "BoardGraph.h"
+#include "ClueSolver.h"
 #include <string>
 #include <memory>
 #include <optional>
@@ -30,6 +31,7 @@ public:
 		Clue::BoardGraph boardGraph;
 		std::optional<Clue::Room> roomTarget;
 		std::map<Clue::Character, std::shared_ptr<Clue::BoardGraph::Node>> nodeOccupiedMap;
+		ClueSolver solver;
 	};
 
 	GameData* GetGameData();
